@@ -436,23 +436,37 @@ func (i *InMemCollector) send(trace *types.Trace) {
 	}
 
 	var sampler sample.Sampler
-	var found bool
+	//var found bool
 
 	// get sampler key (dataset for legacy keys, environment for new keys)
-	samplerKey, isLegacyKey := trace.GetSamplerKey()
+	samplerKeyName, samplerKeySlug, isLegacyKey := trace.GetSamplerKey()
 	logFields := logrus.Fields{
 		"trace_id": trace.TraceID,
 	}
 	if isLegacyKey {
-		logFields["dataset"] = samplerKey
+		logFields["dataset"] = samplerKeyName
 	} else {
-		logFields["environment"] = samplerKey
+		logFields["environment"] = samplerKeyName
 	}
 
 	// use sampler key to find sampler, crete and cache if not found
-	if sampler, found = i.datasetSamplers[samplerKey]; !found {
-		sampler = i.SamplerFactory.GetSamplerImplementationForDataset(samplerKey)
-		i.datasetSamplers[samplerKey] = sampler
+	//if sampler, found = i.datasetSamplers[samplerKeyName]; !found {
+	//	sampler = i.SamplerFactory.GetSamplerImplementationForDataset(samplerKeyName)
+	//	i.datasetSamplers[samplerKeyName] = sampler
+	//}
+
+	sampler = i.datasetSamplers[samplerKeyName]
+	if sampler == nil {
+		sampler = i.datasetSamplers[samplerKeySlug]
+
+		if sampler == nil {
+			sampler = i.SamplerFactory.GetSamplerImplementationForDataset(samplerKeyName)
+
+			if sampler == nil {
+				sampler = i.SamplerFactory.GetSamplerImplementationForDataset(samplerKeySlug)
+			}
+			i.datasetSamplers[samplerKeyName] = sampler
+		}
 	}
 
 	// make sampling decision and update the trace

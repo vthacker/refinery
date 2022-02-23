@@ -17,13 +17,18 @@ const (
 // used to put a request ID into the request context for logging
 type RequestIDContextKey struct{}
 
+type EnvironmentInfo struct {
+	name string
+	slug string
+}
+
 // event is not part of a trace - it's an event that showed up with no trace ID
 type Event struct {
 	Context     context.Context
 	APIHost     string
 	APIKey      string
 	Dataset     string
-	Environment string
+	Environment EnvironmentInfo
 	SampleRate  uint
 	Timestamp   time.Time
 	Data        map[string]interface{}
@@ -67,20 +72,22 @@ func (t *Trace) GetSpans() []*Span {
 	return t.spans
 }
 
-func (t *Trace) GetSamplerKey() (string, bool) {
+func (t *Trace) GetSamplerKey() (name string, slug string, isLegacy bool) {
 	if IsLegacyAPIKey(t.APIKey) {
-		return t.Dataset, true
+		return t.Dataset, t.Dataset, true
 	}
 
-	env := ""
+	envName := ""
+	envSlug := ""
 	for _, sp := range t.GetSpans() {
-		if sp.Event.Environment != "" {
-			env = sp.Event.Environment
+		if sp.Event.Environment.name != "" && sp.Event.Environment.slug != "" {
+			envName = sp.Event.Environment.name
+			envSlug = sp.Event.Environment.slug
 			break
 		}
 	}
 
-	return env, false
+	return envName, envSlug, false
 }
 
 // Span is an event that shows up with a trace ID, so will be part of a Trace
