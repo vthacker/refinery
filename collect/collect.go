@@ -624,7 +624,7 @@ func mergeTraceAndSpanSampleRates(sp *types.Span, traceSampleRate uint, dryRunMo
 func isRootSpan(sp *types.Span) bool {
 	parentID := sp.Data["trace.parent_id"]
 	if parentID == nil {
-		parentID = sp.Data["parentId"]
+		parentID = sp.Data["parent_id"]
 		if parentID == nil {
 			// no parent ID present; it's a root span
 			return true
